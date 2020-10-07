@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Tree</title>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"></script>
+</head>
+
+<style>
+	body{ margin: 0;  }
+	.tree{ overflow: auto; height: 65vh; width: 100% !important; }
+	.node{ position: relative; position: absolute; width: 35px; height: 35px; background-color: white; border: 2px solid black; border-radius: 50%;  }
+	.left{ top: 4em; }
+	.right{ top: 4em; }
+	.root{ position: relative; left:50%; top:2em; width: 35px; height: 35px; background-color: white; border: 2px solid black; border-radius: 50%; }
+	.root span{ position: absolute; top: 26%; left: 26%; }
+	.line{ z-index: -2; position:absolute; width:2px; margin-top:-1px; background-color: black;}
+	
+
+	div.intro{ display: flex; justify-content: center; flex-wrap: wrap; flex-flow: column; }
+	div.intro h3.banner{ text-align: center; font-size: 30px; }
+	div.intro h4{ text-align: center; }
+	div.intro div.commands{ text-align: center; line-height: 2; }
+	#console{ overflow: auto; padding: 1em; position: fixed; bottom: 0; left: 0; right: 25vh; height: 30vh; background-color: black; color: white; border-top: 2px solid grey;  }
+	#console input.console_input:focus{ border: none; box-shadow: none; outline: none;  }
+	#console input.console_input{ background-color: black; width: 90%; border: none; color: white; }
+	#console div.result_set{ padding: 0.4em 0;  }
+	#console div.result_set > * { margin: 0.4em 0;  }
+	#console div.result_set div.result_div { padding: 0 1em;  }
+	#zoom_control{ position: fixed; bottom: 0; right: 0; height: 30vh; width: 20vh; z-index: 2; border-top: 2px solid lightgrey; padding: 1em; background-color: white;  }
+	#zoom_control button{ margin: 1em auto; margin: 0.4em 0.6em;  }
+	#zoom_control h3{ margin: 0; margin-bottom : 0.6em; font-size: 30px;   }
+	#zoom_control label{ font-size: 20px;   }
+</style>
+
+<body>
+	<div id="zoom_control" class="text-center">
+		<h3>Zoom</h3>
+		<div>
+			<label for="auto">Auto</label>
+			<input type="checkbox" id="auto" class="auto" checked><br>
+		</div><br>
+		<button type="button" class="zoom_out">-</button>
+		<button type="button" class="zoom_in">+</button>
+	</div>
+
+	<div class="intro">
+		<h3 class="banner">Welcome To Tree Visualizer</h3>
+		<h4>Console Commands</h4>
+		<div class="commands">
+			<span><b>generate n</b> : Generate a balanced tree with n nodes ( n > 0 )  </span><br>
+			<span><b>inorder</b> : Start inorder traversal on current tree</span><br>
+			<span><b>clear</b> : clear console</span><br>
+			<span><b>insert</b> : Insert a new node (Level Order)</span><br>
+			<!-- <span><b></b> : </span><br> -->
+			<span><b>reset :</b> Reset whole tree</span><br>
+			<span><b>help</b> : Help</span><br>
+		</div>
+	</div>
+
+	<div class="tree">
+	</div>
+
+	<div id="console">
+		<div class="input_div"><span>&nbsp;>>>&nbsp;</span><input type="text" class="console_input"></div>
+	</div>
+</body>
+
+<script type="text/javascript">
+	$(document).ready( function(){
+		var left = "<div class='node left'></div>"
+		var right = "<div class='node right'></div>"
+		var line = "<div class='line'></div>"
+		var data_element_left = "<span class='data_element_left'></span>"
+		var data_element_right = "<span class='data_element_right'></span>"
+
+		class Node{
+			constructor( data ){
+				this.data = data;
+				this.left = null;
+				this.right = null;
+				this.space = null;
+			}
+		}
+
+		class queue1{
+			constructor(){
+				this.items = []
+			}
+
+			enqueue( item ){
+				this.items.push( item )
+			}
+
+			dequeue(){
+				if( this.isEmpty() )
+					return "Underflow";
+				return this.items.shift();
+			}
+
+			front(){
+				if( this.isEmpty() )
+					return "No element in queue";
+				return this.items[0];
+			}
+
+			isEmpty(){
+				return this.items.length == 0;
+			}
+
+		}
+
+		class Tree{
+
+			constructor( root ){
+				this.root = root
+			}
+
+			insert(){
+				window.node_no+=1
+				var data = window.node_no
+				var queue = new queue1;
+				queue.enqueue( [ this.root, 0 ] );
+				var space_factor = window.space_factor;
+				var prev_level = -1;
+				var queue_element,current,level,first_node_of_level,left_node,data_element_left_obj,space, new_line, root_left, node_left, width_node_left, right_node, data_element_right_obj;
+
+				while( !queue.isEmpty() ){
+					queue_element = queue.dequeue();
+					current = queue_element[0];
+					level = queue_element[1];
+					if(level!=prev_level){
+						first_node_of_level = true;
+						prev_level = level
+					}
+					else{
+						first_node_of_level = false;
+					}
+
+					if( current.left==null ){
+						current.left = new Node( data )
+						current.left.space = current.space/space_factor;
+						left_node = $(left)
+						$(left_node).attr("id",data)
+						data_element_left_obj = $(data_element_left);
+						$(data_element_left_obj).text( data )
+						$(left_node).append( data_element_left_obj )
+						space = current.space/space_factor ;
+						$(left_node).css("left",space+"px")
+						$( "#"+current.data ).append( left_node );
+						new_line = $(line);
+						$(new_line).addClass( String(data) );
+						$( "#"+current.data ).append( new_line );
+						adjustLine( document.getElementById(data), 
+									document.getElementById(current.data), 
+									$("#"+current.data).children("."+data)[0]  )
+
+						if( first_node_of_level ){
+							root_left = $("#"+this.root.data).offset().left
+							node_left = $( left_node ).offset().left
+							width_node_left = $(left_node)[0].offsetWidth
+							$("#"+this.root.data).css("left", root_left-node_left+width_node_left/2+"px" )
+						}
+						break
+					} else{ 
+						if( current.right==null ){
+							current.right = new Node( data )
+							current.right.space = current.space/space_factor;
+							right_node = $(right)
+							$(right_node).attr("id",data)
+							data_element_right_obj = $(data_element_right);
+							$(data_element_right_obj).text( data )
+							$(right_node).append( data_element_right_obj )
+							space = current.space/space_factor ;
+							$(right_node).css("right",space+"px")
+							$( "#"+current.data ).append( right_node );
+							new_line = $(line);
+							$(new_line).addClass( String(data) );
+							$( "#"+current.data ).append( new_line );
+							adjustLine( document.getElementById(data), 
+										document.getElementById(current.data), 
+										$("#"+current.data).children("."+data)[0]  )
+							break
+						} else{
+							queue.enqueue( [ current.left, level+1 ] )
+							queue.enqueue( [ current.right, level+1 ] )
+						}
+					}
+				} 
+			}
+		
+			inorder(){
+				var stack =[];
+				var current = this.root;
+				var second = 0
+				while(true){
+					if( current!=null ){
+						stack.push( current );
+						current = current.left;
+					} else{
+						if( stack.length==0 ){
+							break
+						} else{
+							current = stack.pop();
+							$("#"+current.data).css("background-color","red")
+							$("#"+current.data).children("span").css("color","white")
+							second+=500
+							setTimeout( function( current ){
+								$("#"+current.data).css("background-color","white");
+								$("#"+current.data).children("span").css("color","black");
+							}, second, current )
+
+							current = current.right;
+						}
+					}
+				}
+			}
+		}
+
+		function adjustLine(from, to, line){
+			var fT = $(from).offset().top  + from.offsetHeight/2;
+			var tT = $(to).offset().top + to.offsetHeight/2;
+			var fL = $(from).offset().left + from.offsetWidth/2;
+			var tL = $(to).offset().left + to.offsetWidth/2;
+			var CA   = Math.abs(tT - fT);
+			var CO   = Math.abs(tL - fL);
+			var H    = Math.sqrt(CA*CA + CO*CO);
+			var ANG  = 180 / Math.PI * Math.acos( CA/H );
+
+			if(tT > fT){
+			  var top  = (tT-fT)/2;
+			}else{
+			  var top  = (fT-tT)/2;
+			}
+			if(tL > fL){
+			  var left = -(tL-fL)/2 + $(from)[0].offsetHeight/2;
+			}else{
+			  var left = (fL-tL)/2  + $(from)[0].offsetHeight/2;
+			}
+
+			if(( fT < tT && fL < tL) || ( tT < fT && tL < fL) || (fT > tT && fL > tL) || (tT > fT && tL > fL)){
+			ANG *= -1;
+			}
+
+			top-= H/2;
+
+
+			line.style["-webkit-transform"] = 'rotate('+ ANG +'deg)';
+			line.style.top    = top+'px';
+			line.style.left   = left+'px';
+			line.style.height = H + 'px';
+		}
+
+		function adjust_nodes_space(){
+			var queue = new queue1;
+			queue.enqueue( [ window.tree.root, 0 ] );
+			var current, prev_level,level;
+			var space_factor = window.space_factor
+			prev_level = -1
+			while( !queue.isEmpty() ){
+				element = queue.dequeue();
+				current = element[0];
+				level = element[1];
+				if(level!=prev_level){
+					first_node_of_level = true;
+					prev_level = level
+				}
+				else{
+					first_node_of_level = false;
+				}
+				if( current.left!=null ){
+					$("#"+current.data).children("div.left").css("left", current.space/space_factor+"px" );
+					current.left.space = current.space/space_factor;
+					queue.enqueue( [ current.left, level+1 ] );
+					adjustLine( document.getElementById(current.left.data), 
+									document.getElementById(current.data), 
+									$("#"+current.data).children("."+current.left.data)[0]  )
+
+					if( first_node_of_level ){
+						root_left = $("#"+window.tree.root.data).offset().left
+						node_left = $( "#"+current.left.data ).offset().left
+						width_node_left = $("#"+current.left.data)[0].offsetWidth
+						$("#"+window.tree.root.data).css("left", root_left-node_left+width_node_left/2+"px" )
+					}
+				}
+					
+				if( current.right!=null ){
+					$("#"+current.data).children("div.right").css("right", current.space/space_factor+"px" );
+					current.right.space = current.space/space_factor;
+					queue.enqueue( [ current.right, level+1 ] );
+					adjustLine( document.getElementById(current.right.data), 
+									document.getElementById(current.data), 
+									$("#"+current.data).children("."+current.right.data)[0]  )
+				}
+					
+			}
+		}
+
+		function auto_zoom(){
+			while( $(".tree")[0].scrollWidth != window.innerWidth ){
+				if( window.zoom_factor<=0 ){
+					window.zoom_factor = 1;
+					break
+				}
+				window.zoom_factor -= 0.02;
+				$(".root")[0].style.zoom = window.zoom_factor;
+			}
+		}
+
+		$(document).on("change","#auto", function(){
+			if( $(this).prop("checked")==true ){
+				if( $(".root").length!=0 ){
+					auto_zoom();
+				}
+				window.auto_zoom = true;
+			}else{
+				window.auto_zoom = false;
+				if( $(".root").length!=0 ){
+					window.zoom_factor = 1;
+					$(".root")[0].style.zoom = window.zoom_factor;
+				}
+			}
+		})
+
+		$(document).on("click","#zoom_control .zoom_in", function(){
+			window.zoom_factor += 0.02
+			$(".root")[0].style.zoom = window.zoom_factor;
+		});
+
+		$(document).on("click","#zoom_control .zoom_out", function(){
+			window.zoom_factor -= 0.02
+			$(".root")[0].style.zoom = window.zoom_factor;
+		});
+
+		window.space_factor = 2;
+		window.zoom_factor = 1;
+		window.auto_zoom = true;
+
+
+		// Console
+		$(document).on("click", function(e){
+			if( $("#console").find("*").has( e.target ).length || $("#console")[0]==e.target ){
+				$("#console input.console_input").focus();
+			}
+		});
+
+		$(document).on("keyup","#console input.console_input", function(e){
+			if( e.which==13 ){
+				var result_set = $("<div class='result_set'></div>");
+				var command = $(this).val().trim().toLowerCase();
+				var static_input = $("<span>&nbsp;>>>&nbsp;"+command+"</span>");
+				var result_div = $("<div class='result_div'>Result....</div>");
+
+				// Do Somthing..
+				if( command=="clear" ){
+					$("#console div.result_set").remove();
+				}else if(command.split(" ").length==2 && command.split(" ")[0]=="generate" && Number(command.split(" ")[1])!=NaN && Number(command.
+						split(" ")[1])>0 ){
+						command = command.split(" ");
+						$(".root").remove();
+						$(".intro").hide();
+						window.tree = new Tree( new Node( 0 ) );
+						window.node_no = 0
+						var max_level = Math.ceil( Math.log2( Number(command[1]) ) );
+						window.tree.root.space = -( (2<<max_level) )*16 - 10;
+						var root = '<div id="0" class="root">\
+										<span style="">0</span>\
+									</div>'
+						$(".tree").html( root );
+						for( var i=0; i<Number(command[1])-1; i++ )
+							window.tree.insert();
+
+						if( window.auto_zoom ){
+							auto_zoom();
+						}
+						$(result_set).append( static_input );
+						$(result_div).text("A balanced tree has been generated with "+Number(command[1])+" nodes.");
+						$(result_div).css("color","green")
+						$(result_set).append( result_div );
+						$( result_set ).insertBefore( "#console div.input_div" )
+				}else if(command=="inorder"){
+					window.tree.inorder();
+					$(result_set).append( static_input );
+					$(result_div).text("Inorder traversal has been started");
+					$(result_div).css("color","green")
+					$(result_set).append( result_div );
+					$( result_set ).insertBefore( "#console div.input_div" )
+				}else if(command=="insert"){
+					if( $(".root")[0]!=undefined ){
+						window.tree.insert();
+						$(result_set).append( static_input );
+						var total_nodes = window.node_no +1;
+						var max_level = Math.ceil( Math.log2( total_nodes ) );
+						window.tree.root.space = -( (2<<max_level) )*16 - 10;
+						adjust_nodes_space();
+						if( window.auto_zoom ){
+							auto_zoom();
+						}
+						$(result_div).text("New node with no. "+window.node_no+" has been inserted.");
+						$(result_div).css("color","green")
+						$(result_set).append( result_div );
+						$( result_set ).insertBefore( "#console div.input_div" )
+					}else {
+						$(result_set).append( static_input );
+						$(result_div).text("Before insertion you have to generate a tree");
+						$(result_div).css("color","red")
+						$(result_set).append( result_div );
+						$( result_set ).insertBefore( "#console div.input_div" )
+					}
+				}else if(command=="help"){
+					$(result_set).append( static_input );
+					$(result_div).html("generate n : Generate a balanced tree <br><br> \
+										inorder : Start inorder traversal on current tree<br><br>\
+										clear : Clear console<br><br>\
+										insert : Insert a new node<br><br>\
+										reset : Reset whole tree<br><br>\
+										help : help");
+					$(result_div).css({ "color":"white", "padding":"10px" })
+					$(result_set).append( result_div );
+					$( result_set ).insertBefore( "#console div.input_div" )
+				}else if(command=="reset"){
+					$(".root").remove();
+					$(".intro").show()
+					window.tree = new Tree( new Node( 0 ) );
+					window.node_no = 0
+					window.tree.root.space = window.main_space;
+					$(result_set).append( static_input );
+					$(result_div).text("Tree has been reseted");
+					$(result_div).css("color","green")
+					$(result_set).append( result_div );
+					$( result_set ).insertBefore( "#console div.input_div" )
+				} else{
+					$(result_set).append( static_input );
+					$(result_div).text("Invalid Command!");
+					$(result_div).css("color","red");
+					$(result_set).append( result_div );
+					$( result_set ).insertBefore( "#console div.input_div" )
+				}
+				$("#console")[0].scrollTop = $("#console")[0].scrollHeight;
+				$(this).val('')					
+			}
+		});
+		// End
+
+	});
+
+
+</script>
+
+</html> 
